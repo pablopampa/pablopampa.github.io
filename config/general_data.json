@@ -1,0 +1,12 @@
+{
+  "nombre_pagina": "Mi Página Web",
+  "descripcion_pagina": "esta es una pagina web estatica generada con un script de python",
+  "logo": "https://itu.uncuyo.edu.ar/images/logoitu.png",
+  "texto_pagina": "Una simple pagina web estatica generada desde un script de python y publicada en forma automatica en algun servicio Cloud, en el contexto de la materia de Sistemas Operativos de de la carrera <a href='https://itu.uncuyo.edu.ar/estudios/carrera/tecnicatura-universitaria-redes-de-datos-y-telecomunicaciones' target='_blank'>Redes de Datos y Telecomunicaciones del ITU UNCuyo</a>",
+  "titulo_boton": "Click Aqui",
+
+  "colores": {
+    "background": "#323232",
+    "letras": "#FFFFFF"
+  }
+}

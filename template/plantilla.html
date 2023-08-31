@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ general_data.nombre_pagina }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="description"
+          content="{{ descripcion_pagina }}">
+
+    <style>
+        body {
+            max-width: 75%;
+            margin: auto;
+            padding-left: 0.3rem;
+            padding-right: 0.3rem;
+            line-height: 130%;
+            font-size: 110%;
+        }
+        header {
+            color: {{ general_data.colores.letras }};
+            text-align: right;
+            background-color: {{ general_data.colores.background }};
+        }
+        hr {
+            height: 1px;
+            background: #888;
+            border: none;
+        }
+        h3 {
+            color: #444;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            margin-right: auto;
+            border: 2px #888 solid;
+            border-collapse: collapse;
+        }
+
+        thead > tr {
+            background: #eef;
+            border-bottom: 1px #888 solid;            
+            border: 1px #888 solid;
+        }
+
+        th, td {
+            padding: 0.4rem;
+            text-align: center;
+        }
+
+        button {
+            width: 50%;
+            /* Safari ignores min-height on buttons. */
+            line-height: 3rem;
+            font-size: 100%;
+        }
+
+        .latency {
+            width: 4.85rem;
+            text-align: center;
+        }
+
+        .note {
+            text-align: center;
+        }
+
+        footer {
+            color: #444;
+            text-align: center;
+        }
+        .center-content {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .tabla-group {
+            width: 100%;
+            text-align: center;
+            margin-right: auto;
+            border: 2px #888 solid;
+            border-collapse: collapse;   
+        }
+        .tabla-group th, .tabla-group td {
+            width: 100%;
+            padding: 8px;
+            text-align: left;
+        }
+        .group-header {
+            cursor: pointer;
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            padding: 5px 0;
+        }
+    </style>
+
+</head>
+<body>
+    <header>
+        <h1>{{ general_data.nombre_pagina }} &nbsp;&nbsp;&nbsp;<img src="{{ general_data.logo }}" class="img-responsive" alt="{{ general_data.nombre_pagina }}"> &nbsp;</h1>
+        <hr/>
+    </header>
+    <main>
+        <p>{{ general_data.texto_pagina }}</p>
+
+        <div class="center-content">
+            <button id='pingButton'>{{ general_data.titulo_boton }}</button>
+        </div>
+        {% for services, sites in table_data.items() %}
+        <div class="group-header" data-group="{{ group }}">
+            <h2>{{ services }}</h2>
+        </div>
+        <table class="tabla-group" style="display: block;">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th> </th>
+                    <th>Latency</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for site in sites %}           
+                <tr>
+                    <td><a href="{{ site.urlservicio }}" target="_blank">{{ site.nombre }}</a></td>
+                    <td> -> </td>
+                    <td class='latency' pingUrl='{{ site.urltest }}' supportsCors="false">&nbsp;</td>            
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+
+         <h2>About</h2>
+        <p>Basado en el proyecto <a href="https://www.cloudping.info/" target="_blank">cloudping.info</a> de <a href="https://www.linkedin.com/in/mleonhard/" target="_blank">Michael Leonhard</a><br/>
+        </p>
+
+    </main>
+    <script type="text/javascript">
+
+        function currentTimeMillis() {
+            return (new Date()).getTime();
+        }
+
+        async function fetchUrl(url, supportsCors, abortController) {
+            const OPTS = {
+                signal: abortController.signal,
+                "cache": "no-store",
+                "credentials": "omit",
+                "redirect": "error"
+            };
+            if (supportsCors) {
+                await fetch(url, OPTS);
+            } else {
+                try {
+                    await fetch(url, OPTS);
+                } catch (e) {
+                    if (e instanceof TypeError) {
+                        console.error('Ignoring error, which should be a CORS error');
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        }
+
+        async function doBox(box) {
+            let timedOut = false;
+            try {
+                // This is ugly because `fetch` has no `deadline` or `timeout` option.
+                const abortController = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    timedOut = true;
+                    abortController.abort();
+                }, 5 * 1000 /* milliseconds */);
+                const pingUrl = box.getAttribute("pingUrl");
+                const supportsCors = box.getAttribute("supportsCors") !== "false";
+                box.innerHTML = "connecting";
+                await fetchUrl(pingUrl, supportsCors, abortController);
+                box.innerHTML = "pinging";
+                const startTime = currentTimeMillis();
+                await fetchUrl(pingUrl, supportsCors, abortController);
+                const endTime = currentTimeMillis();
+                const elapsed = endTime - startTime;
+                box.innerHTML = elapsed.toString() + " ms";
+                clearTimeout(timeoutId);
+            } catch (e) {
+                if (timedOut && e instanceof DOMException && (e.code === DOMException.ABORT_ERR || e.name === 'AbortError')) {
+                    box.innerHTML = 'timeout';
+                } else {
+                    console.error(e);
+                    box.innerHTML = 'error';
+                }
+            }
+        }
+
+        async function worker(boxes) {
+            while (true) {
+                let box = boxes.pop();
+                if (box === undefined) {
+                    break;
+                }
+                await doBox(box);
+            }
+        }
+
+        const pingButton = document.getElementById("pingButton");
+        pingButton.addEventListener("click", async function () {
+            pingButton.setAttribute("disabled", "disabled");
+            let latencyBoxes = Array.from(document.querySelectorAll(".latency"));
+            latencyBoxes.reverse();
+            await Promise.all([
+                worker(latencyBoxes),
+                worker(latencyBoxes),
+                worker(latencyBoxes),
+                worker(latencyBoxes),
+                worker(latencyBoxes)
+            ]);
+            pingButton.removeAttribute("disabled");
+        });
+    </script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapseButtons = document.querySelectorAll('.group-header');
+            const toggleAllButton = document.querySelector('#toggle-all');
+
+            collapseButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const table = this.nextElementSibling;
+                    table.style.display = (table.style.display === 'none' || table.style.display === '') ? 'block' : 'none';
+                });
+            });
+
+            toggleAllButton.addEventListener('click', function() {
+                const tables = document.querySelectorAll('.tabla-group');
+                const newState = tables[0].style.display === 'none' ? 'block' : 'none';
+
+                tables.forEach(table => {
+                    table.style.display = newState;
+                });
+
+                toggleAllButton.textContent = newState === 'none' ? 'Mostrar todo' : 'Colapsar todo';
+            });
+        });
+    </script>
+
+</body>
+</html>

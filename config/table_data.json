@@ -1,0 +1,21 @@
+{
+  "Servicios Basicos":  [
+    {
+      "nombre": "Virtual Labs ITUaaS",
+      "urlservicio": "https://labs.ituaas.cloud/",
+      "urltest": "https://labs.ituaas.cloud/"    
+    },
+    {
+      "nombre": "Aulas Virtuales",
+      "urlservicio": "https://aulas.itu.uncu.edu.ar/itu/",
+      "urltest": "https://aulas.itu.uncu.edu.ar/itu/pluginfile.php/1/core_admin/logo/0x200/1692232052/ituvirual.png"    
+    }
+  ],
+  "Servicios Adicionales":  [
+    {
+      "nombre": "Gestion Alumnos",
+      "urlservicio": "https://guarani.itu.uncu.edu.ar/autogestion/",
+      "urltest": "https://guarani.itu.uncu.edu.ar/autogestion/"    
+    }
+  ]
+}
